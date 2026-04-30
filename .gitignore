@@ -1,0 +1,53 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual env ---
+.venv/
+venv/
+env/
+
+# --- Environment variables ---
+.env
+.env.*
+
+# --- Database ---
+*.db
+*.sqlite3
+
+# --- Alembic ---
+alembic/versions/*.pyc
+# сами миграции (.py) обычно КОММИТЯТ, не игнорь их
+
+# --- Logs ---
+*.log
+
+# --- PyCharm / IDE ---
+.idea/
+*.iml
+
+# --- VS Code ---
+.vscode/
+
+# --- OS мусор ---
+.DS_Store
+Thumbs.db
+
+# --- Build / cache ---
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Testing ---
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Mypy / lint ---
+.mypy_cache/
+.ruff_cache/
+
+# --- Misc ---
+*.swp
