@@ -1,4 +1,7 @@
-from pydantic import BaseModel, Field, ConfigDict
+from datetime import datetime
+
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from typing import Optional
 from decimal import Decimal
 
 class CategoryCreate(BaseModel):
@@ -32,3 +35,30 @@ class Product(BaseModel):
     category_id: int = Field(description="ID категории")
     is_active: bool = Field(description="Активность товара")
     model_config = ConfigDict(from_attributes=True)
+
+class UserCreate(BaseModel):
+    email: EmailStr = Field(description="Email пользователя")
+    password: str = Field(min_length=8, description="Пароль (минимум 8 символов)")
+    role: str = Field(default="buyer", pattern="^(buyer|seller|admin)$", description="Роль: 'buyer' или 'seller' или 'admin'")
+
+class User(BaseModel):
+    id: int
+    email: EmailStr
+    is_active: bool
+    role: str
+    model_config = ConfigDict(from_attributes=True)
+
+class Review(BaseModel):
+    id: int
+    user_id: int
+    product_id: int
+    comment: str | None = None
+    comment_date: datetime = Field(default_factory=datetime.now)
+    grade: int = Field(ge=1, le=5)
+    is_active: bool = True
+
+
+class ReviewCreate(BaseModel):
+    product_id: int
+    comment: str | None = None
+    grade: int = Field(ge=1, le=5)
