@@ -21,7 +21,7 @@
 
 ### Аутентификация и роли
 
-- регистрация пользователя с ролью `buyer`, `seller` или `admin`;
+- регистрация пользователя с ролью `buyer` или `seller` (роль `admin` назначается вручную в БД);
 - вход через `OAuth2PasswordRequestForm`;
 - выдача `access_token` и `refresh_token`;
 - защита маршрутов по ролям.
@@ -30,7 +30,8 @@
 
 - древовидные категории через `parent_id`;
 - список активных категорий;
-- мягкое удаление категорий через `is_active`.
+- мягкое удаление категорий через `is_active`;
+- создание, изменение и удаление категорий доступно только администратору.
 
 ### Товары
 
@@ -97,7 +98,7 @@ fastapi_ecommerce/
 |---|---|
 | `buyer` | смотреть товары, работать с корзиной, оформлять заказы, оставлять отзывы |
 | `seller` | создавать, изменять и удалять свои товары |
-| `admin` | удалять отзывы |
+| `admin` | управлять категориями, удалять отзывы |
 
 ## Сущности системы
 
@@ -170,26 +171,24 @@ pip install -r requirements.txt
 
 ### 2. Создать `.env`
 
-В проекте используется переменная:
+```powershell
+copy .env.example .env      # Linux/macOS: cp .env.example .env
+```
 
 ```env
 SECRET_KEY=your_super_secret_key
+DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/ecommerce_db
 ```
 
-### 3. Настроить PostgreSQL
+### 3. Поднять PostgreSQL
 
-Сейчас строка подключения к базе задана напрямую в двух местах:
+Подойдёт локальный сервер или контейнер:
 
-- `app/database.py`
-- `alembic.ini`
-
-Перед запуском убедитесь, что там указан ваш актуальный `PostgreSQL`-сервер, пользователь, пароль, порт и имя базы.
-
-Пример формата:
-
-```text
-postgresql+asyncpg://postgres:password@localhost:5432/ecommerce_db
+```bash
+docker run -d --name ecommerce-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=ecommerce_db -p 5432:5432 postgres:17
 ```
+
+Приложение и Alembic берут строку подключения из `DATABASE_URL`.
 
 ### 4. Применить миграции
 
@@ -224,9 +223,9 @@ uvicorn app.main:app --reload
 | Метод | URL | Описание | Доступ |
 |---|---|---|---|
 | `GET` | `/categories/` | Список активных категорий | публично |
-| `POST` | `/categories/` | Создание категории | публично |
-| `PUT` | `/categories/{category_id}` | Обновление категории | публично |
-| `DELETE` | `/categories/{category_id}` | Мягкое удаление категории | публично |
+| `POST` | `/categories/` | Создание категории | `admin` |
+| `PUT` | `/categories/{category_id}` | Обновление категории | `admin` |
+| `DELETE` | `/categories/{category_id}` | Мягкое удаление категории | `admin` |
 
 ### Товары
 
@@ -338,6 +337,7 @@ curl -X POST "http://127.0.0.1:8000/users/refresh-token?refresh_token=YOUR_REFRE
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/categories/" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Smartphones",
@@ -412,8 +412,8 @@ alembic downgrade -1
 ## Полезные замечания по текущей реализации
 
 - `SECRET_KEY` берётся из `.env`.
-- Подключение к базе данных сейчас не вынесено в переменные окружения, а задано напрямую в коде и `alembic.ini`.
-- Категории в текущей реализации доступны без авторизации.
+- Строка подключения к БД и секрет JWT задаются через `.env`.
+- Управление категориями закрыто ролью `admin`, получить её через регистрацию нельзя.
 - Для товаров используется мягкое удаление через `is_active`.
 - Для отзывов используется мягкое удаление и автоматический пересчёт среднего рейтинга товара.
 - При оформлении заказа корзина очищается, а остатки товара уменьшаются.
@@ -421,9 +421,7 @@ alembic downgrade -1
 
 ## Идеи для следующего улучшения
 
-- вынести `DATABASE_URL` в `.env`;
 - добавить `Docker` и `docker-compose`;
-- закрыть административные маршруты авторизацией;
 - добавить тесты `pytest`;
 - добавить `CI`;
 - реализовать статусы заказа и управление ими;
